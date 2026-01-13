@@ -58,8 +58,9 @@ logs/
 .env
 .env.local
 
-# Project documentation (local files)
+# Project documentation (local/generated files)
 project_discription.md
 PROJECT_PLAN.md
-
-project_discription.
+TEST_DOCUMENTATION.md
+TEST_DOCUMENTATION.txt
+TEST_RESULTS.txt

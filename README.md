@@ -13,6 +13,8 @@ This project captures live video from a webcam, processes frames through a YOLO 
 ## ✨ Features
 
 - **Real-time detection** from webcam/camera
+- **Video file input** - process video files
+- **Video recording** - save detection output to file
 - **80 object classes** (COCO dataset)
 - **Modular architecture** - easy to extend
 - **FPS counter** display
@@ -55,6 +57,7 @@ python src/main.py --help
 
 Options:
   --camera, -c      Camera index (default: 0)
+  --video, -v       Video file path (overrides camera)
   --model, -m       YOLO model name (default: yolov8n.pt)
   --confidence      Confidence threshold (default: 0.5)
   --device, -d      Device: cpu, cuda:0 (default: cpu)
@@ -62,6 +65,10 @@ Options:
   --height          Frame height (default: 720)
   --no-fps          Hide FPS counter
   --counts          Show object counts
+  --record, -r      Start recording immediately
+  --output, -o      Output video path (default: auto-generated)
+  --loop            Loop video file
+  --no-display      Run without display (for headless processing)
 ```
 
 ### Examples
@@ -69,6 +76,12 @@ Options:
 ```bash
 # Use different camera
 python src/main.py --camera 1
+
+# Process video file
+python src/main.py --video path/to/video.mp4
+
+# Process video and record output
+python src/main.py --video input.mp4 --record --output output.mp4
 
 # Higher confidence threshold
 python src/main.py --confidence 0.7
@@ -81,6 +94,9 @@ python src/main.py --width 640 --height 480
 
 # Show object counts
 python src/main.py --counts
+
+# Loop video file
+python src/main.py --video input.mp4 --loop
 ```
 
 ### Keyboard Controls
@@ -90,6 +106,8 @@ python src/main.py --counts
 | `q` | Quit application |
 | `ESC` | Quit application |
 | `s` | Save screenshot |
+| `r` | Toggle recording on/off |
+| `p` / `SPACE` | Pause/Resume (video files only) |
 
 ## 📁 Project Structure
 
@@ -98,7 +116,8 @@ real-time-object-detection/
 │
 ├── src/
 │   ├── main.py              # Entry point
-│   ├── video_capture.py     # Camera handling
+│   ├── video_capture.py     # Camera/video file handling
+│   ├── video_recorder.py    # Recording functionality
 │   ├── preprocessing.py     # Image preprocessing
 │   ├── detector.py          # YOLO model wrapper
 │   ├── postprocessing.py    # Detection filtering
@@ -107,8 +126,9 @@ real-time-object-detection/
 ├── config/
 │   └── settings.py          # Configuration
 │
+├── tests/                   # Unit tests (167 tests)
 ├── models/                  # Model weights (auto-downloaded)
-├── outputs/                 # Screenshots
+├── outputs/                 # Screenshots & recordings
 ├── requirements.txt
 └── README.md
 ```
@@ -127,6 +147,24 @@ MODEL_NAME = "yolov8n.pt"
 CAMERA_INDEX = 0
 FRAME_WIDTH = 1280
 FRAME_HEIGHT = 720
+```
+
+## 🧪 Testing
+
+Run the test suite:
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage
+pytest tests/ -v --cov=src --cov-report=term-missing
+
+# Run specific test file
+pytest tests/test_detector.py -v
+
+# Quick run (stop on first failure)
+pytest tests/ -v -x
 ```
 
 ## 🎯 Detectable Objects (80 Classes)
@@ -165,7 +203,8 @@ The model can detect:
 
 ## 🔮 Future Enhancements
 
-- [ ] Video file input support
+- [x] Video file input support
+- [x] Video recording functionality
 - [ ] Multi-camera support
 - [ ] Object tracking
 - [ ] Custom model training
