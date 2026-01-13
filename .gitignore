@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Model weights (large files)
+*.pt
+*.onnx
+*.engine
+models/*.pt
+models/*.onnx
+models/*.engine
+!models/.gitkeep
+
+# Outputs
+outputs/*
+!outputs/.gitkeep
+runs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+
+# Project documentation (local files)
+project_discription.md
+PROJECT_PLAN.md
+
+project_discription.
