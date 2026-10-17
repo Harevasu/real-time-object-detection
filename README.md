@@ -179,11 +179,29 @@ The model can detect:
 
 ## 📊 Performance
 
-| Model | Size | Speed (CPU) | Speed (GPU) |
-|-------|------|-------------|-------------|
-| yolov8n | 6 MB | ~30ms | ~5ms |
-| yolov8s | 22 MB | ~60ms | ~8ms |
-| yolov8m | 52 MB | ~120ms | ~12ms |
+This project displays a live FPS counter, but **no reproducible end-to-end benchmark has been recorded in this repository by this agent run**.  
+For scientific accuracy, this README does **not** claim a measured FPS value (including 20–30 FPS) here.
+
+### Benchmarking this project
+
+Use a fixed model, device, and resolution when measuring:
+
+```bash
+python src/main.py --model yolov8n.pt --device cpu --width 1280 --height 720
+```
+
+For repeatable input, benchmark with a fixed video file:
+
+```bash
+python src/main.py --video path/to/input.mp4 --loop --model yolov8n.pt --device cpu --width 1280 --height 720
+```
+
+When reporting results, include:
+- CPU model and GPU model (if used)
+- RAM, OS, Python version, OpenCV version
+- Model name, input source (camera or video), and resolution
+- `--device` setting and exact command used
+- Measurement method (for example: average FPS from the on-screen counter after warm-up over N seconds)
 
 ## 🐛 Troubleshooting
 
