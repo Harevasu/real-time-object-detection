@@ -47,7 +47,7 @@ def parse_arguments():
         '--model', '-m',
         type=str,
         default=settings.MODEL_NAME,
-        help='YOLO model name (default: yolov8n.pt)'
+        help=f'YOLOv8 pretrained name or local .pt checkpoint (default: {settings.MODEL_NAME})'
     )
     parser.add_argument(
         '--confidence', '-conf',
@@ -59,10 +59,16 @@ def parse_arguments():
         '--device', '-d',
         type=str,
         default=settings.DEVICE,
-        choices=['cpu', 'cuda:0', 'cuda:1'],
-        help='Device for inference (default: cpu)'
+        help='Inference device, for example cpu or cuda:0'
     )
     
+    parser.add_argument(
+        '--imgsz',
+        type=int,
+        default=640,
+        help='Inference image size (default: 640)'
+    )
+
     # Resolution
     parser.add_argument(
         '--width',
@@ -131,6 +137,7 @@ def main():
     print("=" * 50)
     print(f"Model: {args.model}")
     print(f"Device: {args.device}")
+    print(f"Inference image size: {args.imgsz}")
     print(f"Confidence Threshold: {args.confidence}")
     
     if is_video_file:
@@ -163,7 +170,8 @@ def main():
     detector = ObjectDetector(
         model_name=args.model,
         device=args.device,
-        confidence=args.confidence
+        confidence=args.confidence,
+        imgsz=args.imgsz
     )
     
     postprocessor = PostProcessor(

@@ -64,3 +64,9 @@ PROJECT_PLAN.md
 TEST_DOCUMENTATION.md
 TEST_DOCUMENTATION.txt
 TEST_RESULTS.txt
+# Experiment artifacts and downloaded datasets
+datasets/
+results/
+*.pth
+*.ckpt
+*.safetensors

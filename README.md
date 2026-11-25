@@ -1,222 +1,103 @@
-# Real-Time Object Detection
+# Real-Time Object Detection — YOLOv8 and PASCAL VOC
 
-A real-time object detection system using OpenCV and YOLOv8 (CNN-based deep learning model).
+This project combines a webcam/video object-detection application with a reproducible YOLOv8 fine-tuning, evaluation, and inference-benchmark workflow.
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue)
-![OpenCV](https://img.shields.io/badge/OpenCV-4.8+-green)
-![YOLO](https://img.shields.io/badge/YOLOv8-Ultralytics-red)
+## Features
 
-## 🔍 Overview
+- Webcam and video-file inference with detection overlays, screenshots and video recording
+- Configurable pretrained YOLOv8 weights or locally trained `.pt` checkpoints
+- PASCAL VOC fine-tuning with separate training/validation/test splits
+- Pretrained COCO-model baseline versus a VOC fine-tuned checkpoint on matching VOC2007 test images
+- JSON accuracy and model-prediction timing reports
 
-This project captures live video from a webcam, processes frames through a YOLO object detection model, and displays detected objects with bounding boxes and labels in real-time.
+## Setup
 
-## ✨ Features
+Requires Python and a supported PyTorch installation. Install the project's dependencies using `pip install -r requirements.txt`. For GPU training, install a CUDA-enabled PyTorch build appropriate for your driver and GPU; verify with `torch.cuda.is_available()`.
 
-- **Real-time detection** from webcam/camera
-- **Video file input** - process video files
-- **Video recording** - save detection output to file
-- **80 object classes** (COCO dataset)
-- **Modular architecture** - easy to extend
-- **FPS counter** display
-- **Screenshot capture** functionality
-- **Configurable settings** (confidence, resolution, etc.)
+The default inference checkpoint is **`yolov8n.pt`** in `config/settings.py`. This is a pretrained 80-class COCO detector. Fine-tuned VOC checkpoints contain 20 classes. The app reads class names from the selected checkpoint.
 
-## 🛠️ Installation
+## Dataset and split protocol
 
-### 1. Clone the repository
+Source: [PASCAL Visual Object Classes (VOC)](https://www.robots.ox.ac.uk/~vgg/projects/pascal/VOC/) via [Ultralytics VOC.yaml](https://github.com/ultralytics/ultralytics/blob/main/ultralytics/cfg/datasets/VOC.yaml). The public dataset contains 20 classes. The first run downloads and prepares data into Ultralytics' configured dataset directory (typically `datasets/VOC`, which may be outside this repository); confirm the actual path from Ultralytics output.
 
-```bash
-cd d:\Project\real-time-object-detection
-```
+**Important:** The stock Ultralytics VOC.yaml assigns VOC2007 test to the validation split. This project generates a *different* config under `datasets/voc_splits/` to protect the held-out test set:
 
-### 2. Create virtual environment (recommended)
+| Role | Image groups |
+|---|---|
+| Training | VOC2007 train + val, VOC2012 train |
+| Validation / early stopping | VOC2012 val |
+| Held-out final evaluation | VOC2007 test (4,952 images) |
 
-```bash
-python -m venv venv
-.\venv\Scripts\activate  # Windows
-```
+The training split and validation split do not include VOC2007 test. Custom data YAML paths are accepted via `--data`, but the custom config must provide an appropriate held-out test split.
 
-### 3. Install dependencies
+## Reproducible experiments
+
+Run from the repository root. The scripts take overrides so dataset YAML and checkpoints never need to be hard-coded.
+
+### Train
 
 ```bash
-pip install -r requirements.txt
+python scripts/train.py --model yolov8n.pt --data VOC.yaml --epochs 50 --imgsz 640 --batch 4 --device 0 --seed 42
 ```
 
-## 🚀 Usage
+Default training parameters are stored in `config/training.yaml` (edit the file or override flags). The trained checkpoint is saved to `runs/voc_train/<run-name>/weights/best.pt`; the run also records `experiment.json`. To train on CPU set `--device cpu`; CPU training will be substantially slower. Start with batch size 4 for a small-VRAM GPU and lower it if out-of-memory errors occur.
 
-### Basic Usage
+### Compare accuracy on the same held-out images
+
+```bash
+python scripts/evaluate.py --baseline yolov8n.pt --finetuned runs/voc_train/yolov8n_voc/weights/best.pt --data VOC.yaml --device 0 --imgsz 640 --batch 4
+```
+
+The baseline is an 80-class COCO checkpoint: to compare fairly against VOC's 20 classes, `scripts/voc_data.py` makes a generated COCO-ID ground-truth view of **the same VOC2007 test images**. The baseline predictions are restricted to the corresponding 20 COCO categories. The fine-tuned model is evaluated with its original 20 VOC IDs. Accuracy results are written to `results/evaluation.json` and include mAP50, mAP50-95, mean precision and mean recall.
+
+### Benchmark warmed model prediction
+
+```bash
+python scripts/benchmark.py --models yolov8n.pt runs/voc_train/yolov8n_voc/weights/best.pt --device 0 --imgsz 640 --warmup 10 --iterations 100
+```
+
+The output `results/benchmark.json` contains mean, median and p95 per-frame **model.predict call** latency, with synchronization for CUDA. It includes Ultralytics/PyTorch versions, device information and image size. The input is a synthetic 640×640 BGR frame. The timing includes YOLO's preprocessing/postprocessing and prediction-call overhead, but **not** webcam capture, video decoding, plotting, rendering or video encoding. The computed prediction-only FPS is **not application FPS**.
+
+## Run the app
 
 ```bash
 python src/main.py
-```
-
-### Command Line Options
-
-```bash
-python src/main.py --help
-
-Options:
-  --camera, -c      Camera index (default: 0)
-  --video, -v       Video file path (overrides camera)
-  --model, -m       YOLO model name (default: yolov8n.pt)
-  --confidence      Confidence threshold (default: 0.5)
-  --device, -d      Device: cpu, cuda:0 (default: cpu)
-  --width           Frame width (default: 1280)
-  --height          Frame height (default: 720)
-  --no-fps          Hide FPS counter
-  --counts          Show object counts
-  --record, -r      Start recording immediately
-  --output, -o      Output video path (default: auto-generated)
-  --loop            Loop video file
-  --no-display      Run without display (for headless processing)
-```
-
-### Examples
-
-```bash
-# Use different camera
-python src/main.py --camera 1
-
-# Process video file
 python src/main.py --video path/to/video.mp4
-
-# Process video and record output
-python src/main.py --video input.mp4 --record --output output.mp4
-
-# Higher confidence threshold
-python src/main.py --confidence 0.7
-
-# Use GPU (if available)
-python src/main.py --device cuda:0
-
-# Lower resolution for better FPS
-python src/main.py --width 640 --height 480
-
-# Show object counts
-python src/main.py --counts
-
-# Loop video file
-python src/main.py --video input.mp4 --loop
+python src/main.py --model yolov8n.pt --device cpu
+python src/main.py --model runs/voc_train/yolov8n_voc/weights/best.pt --device cuda:0
+python src/main.py --model models/best.pt --video input.mp4 --record
+python src/main.py --help
 ```
 
-### Keyboard Controls
+`--model` accepts one of the standard pretrained YOLOv8 model names, a valid filesystem checkpoint path, or a filename inside `models/`. An unknown local checkpoint fails with a useful error instead of triggering an unintended download. `--imgsz` sets YOLO inference resolution independently of webcam capture width/height.
 
-| Key | Action |
-|-----|--------|
-| `q` | Quit application |
-| `ESC` | Quit application |
-| `s` | Save screenshot |
-| `r` | Toggle recording on/off |
-| `p` / `SPACE` | Pause/Resume (video files only) |
+Press `q` or Escape to quit, `s` for a screenshot, `r` to toggle recording, and `p` or Space to pause video-file playback.
 
-## 📁 Project Structure
+## Measured results
 
-```
-real-time-object-detection/
-│
-├── src/
-│   ├── main.py              # Entry point
-│   ├── video_capture.py     # Camera/video file handling
-│   ├── video_recorder.py    # Recording functionality
-│   ├── preprocessing.py     # Image preprocessing
-│   ├── detector.py          # YOLO model wrapper
-│   ├── postprocessing.py    # Detection filtering
-│   └── visualization.py     # Drawing utilities
-│
-├── config/
-│   └── settings.py          # Configuration
-│
-├── tests/                   # Unit tests (167 tests)
-├── models/                  # Model weights (auto-downloaded)
-├── outputs/                 # Screenshots & recordings
-├── requirements.txt
-└── README.md
-```
+**Not measured yet.** Dataset download, 50-epoch training, VOC2007 test evaluation, and GPU runtime experiments must be run in a suitable local environment. We do not claim a baseline mAP, an accuracy improvement, CPU/GPU latency, real-time FPS or a verified test count without the corresponding execution logs.
 
-## ⚙️ Configuration
+| Metric | Pretrained COCO YOLOv8n | Fine-tuned VOC YOLOv8n |
+|---|---|---|
+| mAP50 | Pending experiment | Pending experiment |
+| mAP50–95 | Pending experiment | Pending experiment |
+| Mean precision | Pending experiment | Pending experiment |
+| Mean recall | Pending experiment | Pending experiment |
+| Mean model.predict latency | Pending experiment | Pending experiment |
+| Application FPS | Not benchmarked | Not benchmarked |
 
-Edit `config/settings.py` to customize:
+After running the scripts, copy the actual values from the generated JSON reports here, along with the hardware, dependency versions, dataset path and exact commands. Do not substitute generic model speed figures.
 
-```python
-# Detection settings
-CONFIDENCE_THRESHOLD = 0.5
-NMS_THRESHOLD = 0.4
-MODEL_NAME = "yolov8n.pt"
+## Tests
 
-# Camera settings
-CAMERA_INDEX = 0
-FRAME_WIDTH = 1280
-FRAME_HEIGHT = 720
-```
+Use `pytest tests/ -v`. Focused experiment tests in `tests/test_experiments.py` test class mapping, missing/valid checkpoint selection, split isolation, label conversion and metric serialization without requiring downloaded VOC images or pretrained weights. Existing detector integration tests may download `yolov8n.pt` on first execution. The suite's full test count and pass status remain unverified until executed with all dependencies.
 
-## 🧪 Testing
+## Repository hygiene
 
-Run the test suite:
+Dataset files, model weights, training runs, evaluation artifacts and benchmarks are intentionally ignored by Git. Only source code, configuration and reproducibility instructions belong in version control.
 
-```bash
-# Run all tests
-pytest tests/ -v
+## Credits
 
-# Run with coverage
-pytest tests/ -v --cov=src --cov-report=term-missing
+[PASCAL VOC](https://www.robots.ox.ac.uk/~vgg/projects/pascal/VOC/) · [Ultralytics YOLO](https://docs.ultralytics.com/) · [OpenCV](https://opencv.org/)
 
-# Run specific test file
-pytest tests/test_detector.py -v
-
-# Quick run (stop on first failure)
-pytest tests/ -v -x
-```
-
-## 🎯 Detectable Objects (80 Classes)
-
-The model can detect:
-
-- **People**: person
-- **Vehicles**: car, truck, bus, motorcycle, bicycle, airplane, boat, train
-- **Animals**: dog, cat, bird, horse, cow, sheep, elephant, bear, zebra, giraffe
-- **Objects**: cell phone, laptop, keyboard, mouse, tv, chair, couch, bed
-- **And more...**
-
-## 📊 Performance
-
-| Model | Size | Speed (CPU) | Speed (GPU) |
-|-------|------|-------------|-------------|
-| yolov8n | 6 MB | ~30ms | ~5ms |
-| yolov8s | 22 MB | ~60ms | ~8ms |
-| yolov8m | 52 MB | ~120ms | ~12ms |
-
-## 🐛 Troubleshooting
-
-### Camera not detected
-- Try different camera index: `--camera 1`
-- Check if camera is being used by another application
-- Verify camera drivers are installed
-
-### Low FPS
-- Use smaller model: `yolov8n.pt`
-- Reduce resolution: `--width 640 --height 480`
-- Use GPU if available: `--device cuda:0`
-
-### Model download fails
-- Check internet connection
-- Manually download from [Ultralytics](https://github.com/ultralytics/assets/releases)
-
-## 🔮 Future Enhancements
-
-- [x] Video file input support
-- [x] Video recording functionality
-- [ ] Multi-camera support
-- [ ] Object tracking
-- [ ] Custom model training
-- [ ] Web interface
-- [ ] Edge device deployment
-
-## 📝 License
-
-MIT License
-
-## 🙏 Acknowledgments
-
-- [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics)
-- [OpenCV](https://opencv.org/)
-- [COCO Dataset](https://cocodataset.org/)
+Tracking, multi-camera expansion, and unrelated UI changes are intentionally outside this phase.

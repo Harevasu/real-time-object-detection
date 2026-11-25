@@ -6,7 +6,7 @@ Modify these values to customize detection behavior.
 # =============================================================================
 # MODEL SETTINGS
 # =============================================================================
-MODEL_NAME = "yolov8m.pt"  # Options: yolov8n.pt, yolov8s.pt, yolov8m.pt, yolov8l.pt, yolov8x.pt
+MODEL_NAME = "yolov8n.pt"  # Options: yolov8n.pt, yolov8s.pt, yolov8m.pt, yolov8l.pt, yolov8x.pt
 DEVICE = "cpu"  # Options: "cpu", "cuda:0" (for GPU) - Set to cpu until CUDA PyTorch installed
 
 # =============================================================================

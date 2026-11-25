@@ -19,7 +19,7 @@ class TestObjectDetectorInit:
     def test_init_default(self):
         """Test initialization with default values."""
         detector = ObjectDetector()
-        assert detector.model_name == "yolov8m.pt"  # From settings
+        assert detector.model_name == "yolov8n.pt"  # From settings
         assert detector.device == "cpu"  # From settings
         assert detector.confidence == 0.5  # From settings
         assert detector.model is None
