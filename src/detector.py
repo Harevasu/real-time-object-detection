@@ -9,6 +9,7 @@ from ultralytics import YOLO
 
 sys.path.append('..')
 from config import settings
+from src.model_paths import resolve_model_reference
 
 
 class ObjectDetector:
@@ -22,7 +23,7 @@ class ObjectDetector:
         confidence: Confidence threshold for detections
     """
     
-    def __init__(self, model_name=None, device=None, confidence=None):
+    def __init__(self, model_name=None, device=None, confidence=None, imgsz=640):
         """
         Initialize the object detector.
         
@@ -34,6 +35,7 @@ class ObjectDetector:
         self.model_name = model_name if model_name else settings.MODEL_NAME
         self.device = device if device else settings.DEVICE
         self.confidence = confidence if confidence else settings.CONFIDENCE_THRESHOLD
+        self.imgsz = imgsz
         self.model = None
         self.class_names = None
         
@@ -47,17 +49,10 @@ class ObjectDetector:
         try:
             print(f"Loading model: {self.model_name}...")
             
-            # Check if model exists locally in models directory
-            model_path = os.path.join(settings.MODELS_DIR, self.model_name)
-            
-            if os.path.exists(model_path):
-                self.model = YOLO(model_path)
-                print(f"Model loaded from: {model_path}")
-            else:
-                # Download model (will be saved automatically)
-                self.model = YOLO(self.model_name)
-                print(f"Model downloaded: {self.model_name}")
-            
+            model_path = resolve_model_reference(self.model_name)
+            self.model = YOLO(model_path)
+            print(f"Model loaded from: {model_path}")
+
             # Get class names
             self.class_names = self.model.names
             print(f"Model loaded successfully with {len(self.class_names)} classes")
@@ -89,6 +84,7 @@ class ObjectDetector:
             frame,
             conf=confidence,
             device=self.device,
+            imgsz=self.imgsz,
             verbose=False  # Suppress output
         )
         
